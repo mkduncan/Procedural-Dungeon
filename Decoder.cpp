@@ -15,9 +15,7 @@
 
 //	Generates a high quality pseudo-random number.
 static size_t NextRandomIndex();
-
-//	Generates a high quality pseudo-random number with a width of four bytes.
-static int NextRandom();
+static int32_t NextRandom();
 
 #define STB_HERRINGBONE_WANG_TILE_IMPLEMENTATION
 #define STB_HBWANG_ASSERT
@@ -290,6 +288,7 @@ bool Decoder::WriteModelCode(const std::string& modelFile)
 {
 	std::stringstream outputBuffer, vertexBuffer, normalBuffer, bitmapBuffer, faceBuffer;
 	std::ofstream output;
+	Mesh mesh;
 	std::string materialPath = modelFile + ".mtl", modelPath = modelFile + ".obj";
 	std::streamsize digits = 4;
 	size_t faceIndex = 1;
@@ -335,7 +334,7 @@ bool Decoder::WriteModelCode(const std::string& modelFile)
 	Decoder::Width = Decoder::Cells.size() - 2;
 	Decoder::Height = Decoder::Cells.front().size() - 2;
 
-	if (!Dungeon::GenerateMesh(static_cast<uint16_t>(Decoder::Width), static_cast<uint16_t>(Decoder::Height), false, false))
+	if (!Dungeon::GenerateMesh(static_cast<uint16_t>(Decoder::Width), static_cast<uint16_t>(Decoder::Height), mesh))
 	{
 		output.close();
 		return Logger::SaveMessage("Error: Decoder::WriteModelCode() - 4");
@@ -346,28 +345,11 @@ bool Decoder::WriteModelCode(const std::string& modelFile)
 	outputBuffer << "mtllib " << materialPath << "\n";
 	outputBuffer << "o Dungeon\n";
 
-	for (size_t index = 0; index < Dungeon::ShellMesh.Vertices.size(); ++index)
+	for (size_t index = 0; index < mesh.Vertices.size(); ++index)
 	{
-		vertexBuffer << "v " << Dungeon::ShellMesh.Vertices[index].Position.x << " " << Dungeon::ShellMesh.Vertices[index].Position.y << " " << Dungeon::ShellMesh.Vertices[index].Position.z << "\n";
-		normalBuffer << "vn " << Dungeon::ShellMesh.Vertices[index].Normal.x << " " << Dungeon::ShellMesh.Vertices[index].Normal.y << " " << Dungeon::ShellMesh.Vertices[index].Normal.z << "\n";
-		bitmapBuffer << "vt " << Dungeon::ShellMesh.Vertices[index].Texture.x << " " << Dungeon::ShellMesh.Vertices[index].Texture.y << "\n";
-
-		if (index % 3 == 0)
-		{
-			faceBuffer << "f " << faceIndex << "/" << faceIndex << "/" << faceIndex << " ";
-			++faceIndex;
-			faceBuffer << faceIndex << "/" << faceIndex << "/" << faceIndex << " ";
-			++faceIndex;
-			faceBuffer << faceIndex << "/" << faceIndex << "/" << faceIndex << "\n";
-			++faceIndex;
-		}
-	}
-
-	for (size_t index = 0; index < Dungeon::WallMesh.Vertices.size(); ++index)
-	{
-		vertexBuffer << "v " << Dungeon::WallMesh.Vertices[index].Position.x << " " << Dungeon::WallMesh.Vertices[index].Position.y << " " << Dungeon::WallMesh.Vertices[index].Position.z << "\n";
-		normalBuffer << "vn " << Dungeon::WallMesh.Vertices[index].Normal.x << " " << Dungeon::WallMesh.Vertices[index].Normal.y << " " << Dungeon::WallMesh.Vertices[index].Normal.z << "\n";
-		bitmapBuffer << "vt " << Dungeon::WallMesh.Vertices[index].Texture.x << " " << Dungeon::WallMesh.Vertices[index].Texture.y << "\n";
+		vertexBuffer << "v " << mesh.Vertices[index].Position.x << " " << mesh.Vertices[index].Position.y << " " << mesh.Vertices[index].Position.z << "\n";
+		normalBuffer << "vn " << mesh.Vertices[index].Normal.x << " " << mesh.Vertices[index].Normal.y << " " << mesh.Vertices[index].Normal.z << "\n";
+		bitmapBuffer << "vt " << mesh.Vertices[index].Texture.x << " " << mesh.Vertices[index].Texture.y << "\n";
 
 		if (index % 3 == 0)
 		{
@@ -415,7 +397,7 @@ static size_t NextRandomIndex()
 }
 
 //	Generates a high quality pseudo-random number with a width of four bytes.
-static int NextRandom()
+static int32_t NextRandom()
 {
 	return NextRandomIndex() % std::numeric_limits<int32_t>::max();
 }

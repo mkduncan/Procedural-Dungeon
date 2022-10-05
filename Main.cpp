@@ -1,10 +1,10 @@
 #include "Header.hpp"
 
-#define DEBUG_MODE true
-#define ENABLE_MESSAGES true
-
 int main(int argc, char** argv)
 {
+	Scene primaryScene;
+	uint16_t sceneWidth = 256, sceneHeight = 256;
+
 	if (DEBUG_MODE)
 	{
 		Decoder::ReadSourceImage("Assets/chunks.png");
@@ -16,98 +16,59 @@ int main(int argc, char** argv)
 		Decoder::WriteModelCode("output");
 	}
 
-	Shader shader;
-	Texture dirtTexture, rockTexture;
-
 	if (!Window::Open())
 	{
-		if (ENABLE_MESSAGES)
-			Logger::PrintMessages("output.txt");
-
+		Logger::PrintMessages("output.txt");
 		return 1;
 	}
 
-	else if (!shader.Create(StaticShader::Shaders[0], StaticShader::Shaders[1]))
+	else if (!primaryScene.GenerateDungeon(sceneWidth, sceneHeight))
 	{
-		Window::Close();
-
-		if (ENABLE_MESSAGES)
-			Logger::PrintMessages("output.txt");
-
+		Logger::PrintMessages("output.txt");
 		return 2;
-	}
-
-	else if (!dirtTexture.Load("Assets/dirt_texture.png"))
-	{
-		shader.Destroy();
-		Window::Close();
-
-		if (ENABLE_MESSAGES)
-			Logger::PrintMessages("output.txt");
-
-		return 3;
-	}
-
-	else if (!rockTexture.Load("Assets/rock_texture.png"))
-	{
-		dirtTexture.Destroy();
-		shader.Destroy();
-		Window::Close();
-
-		if (ENABLE_MESSAGES)
-			Logger::PrintMessages("output.txt");
-
-		return 4;
-	}
-
-	else if (!Dungeon::GenerateMesh(128, 128))
-	{
-		rockTexture.Destroy();
-		dirtTexture.Destroy();
-		shader.Destroy();
-		Window::Close();
-
-		if (ENABLE_MESSAGES)
-			Logger::PrintMessages("output.txt");
-
-		return 5;
-	}
-
-	else if (!Camera::StartPosition())
-	{
-		Dungeon::DestroyMesh();
-		rockTexture.Destroy();
-		dirtTexture.Destroy();
-		shader.Destroy();
-		Window::Close();
-
-		if (ENABLE_MESSAGES)
-			Logger::PrintMessages("output.txt");
-
-		return 6;
 	}
 
 	while (Window::Update())
 	{
-		Camera::Update();
-		Dungeon::LockCamera();
-		Camera::SetWorld(shader);
+		if (!Camera::Update(false, false))
+		{
+			Window::Close();
+			Logger::PrintMessages("output.txt");
 
-		dirtTexture.Use();
-		Dungeon::RenderShellMesh(shader);
+			return 3;
+		}
 
-		rockTexture.Use();
-		Dungeon::RenderWallMesh(shader);
+		else if (!primaryScene.Update())
+		{
+			Window::Close();
+			Logger::PrintMessages("output.txt");
+
+			return 4;
+		}
+		
+		if (!primaryScene.Render())
+		{
+			Window::Close();
+			Logger::PrintMessages("output.txt");
+
+			return 5;
+		}
 	}
 
-	Window::Close();
-	rockTexture.Destroy();
-	dirtTexture.Destroy();
-	shader.Destroy();
-	Dungeon::DestroyMesh();
-
-	if (ENABLE_MESSAGES)
+	if (!Window::Close())
+	{
+		primaryScene.Destroy();
 		Logger::PrintMessages("output.txt");
 
+		return 6;
+	}
+
+	else if (!primaryScene.Destroy())
+	{
+		Logger::PrintMessages("output.txt");
+		return 7;
+	}
+
+	Logger::PrintMessages("output.txt");
 	return 0;
 }

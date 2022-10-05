@@ -8,19 +8,18 @@
 
 class Texture
 {
-private:
+public:
 	GLuint Id;
 
-public:
 	Texture();
 	~Texture();
 	Texture(const Texture&);
-	Texture(Texture&&) noexcept = default;
+	Texture(Texture&&) noexcept;
 	Texture& operator=(const Texture&);
-	Texture& operator=(Texture&&) noexcept = default;
+	Texture& operator=(Texture&&) noexcept;
 
 	bool Load(const std::string&);
-	bool Use() const;
+	bool Use(const GLint = 0) const;
 	bool Destroy();
 };
 

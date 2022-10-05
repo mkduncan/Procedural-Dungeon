@@ -16,7 +16,7 @@ bool Window::Open()
 	if (Window::Interface != nullptr)
 		return Logger::SaveMessage("Error: Window::Open() - 1.");
 
-	else if(glfwInit() == GLFW_FALSE)
+	else if (glfwInit() == GLFW_FALSE)
 		return Logger::SaveMessage("Error: Window::Open() - 2.");
 
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
@@ -45,6 +45,7 @@ bool Window::Open()
 	glfwGetMonitorPos(monitor, &monitorX, &monitorY);
 	glfwSetWindowPos(Window::Interface, monitorX + ((videoMode->width - WINDOW_WIDTH) >> 1), monitorY + ((videoMode->height - WINDOW_HEIGHT) >> 1));
 	glfwMakeContextCurrent(Window::Interface);
+	glfwSwapInterval(1);
 
 	if (gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)) == GLFW_FALSE)
 	{
@@ -56,10 +57,12 @@ bool Window::Open()
 	}
 
 	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-	glClearColor(0.1f, 0.3f, 0.5f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	return true;
@@ -72,11 +75,8 @@ bool Window::Update()
 
 	else if (glfwWindowShouldClose(Window::Interface) == GLFW_TRUE)
 	{
-		glfwDestroyWindow(Window::Interface);
-		glfwTerminate();
-		Window::Interface = nullptr;
-
-		return Logger::SaveMessage("Error: Window::Update() - 2.");
+		Window::Close();
+		return false;
 	}
 
 	glfwSwapBuffers(Window::Interface);
@@ -100,10 +100,9 @@ bool Window::Update()
 
 bool Window::Close()
 {
-	if (Window::Interface == nullptr)
-		return Logger::SaveMessage("Error: Window::Close() - 1.");
+	if (Window::Interface != nullptr)
+		glfwDestroyWindow(Window::Interface);
 
-	glfwDestroyWindow(Window::Interface);
 	glfwTerminate();
 	Window::Interface = nullptr;
 	Window::Timer = true;
@@ -113,8 +112,16 @@ bool Window::Close()
 
 float Window::DeltaTime(const float scalar)
 {
+	static uint64_t count = 0, maximum = 1000000;
+	static double divisor = 1.0 / static_cast<double>(maximum);
+
 	if (Window::Timer)
 		return 0.0f;
 
-	return scalar * (static_cast<float>(std::chrono::duration_cast<std::chrono::microseconds>(Window::Current - Window::Previous).count()) / 1000000.0f);
+	count = std::chrono::duration_cast<std::chrono::microseconds>(Window::Current - Window::Previous).count();
+
+	if (count > maximum)
+		return 0.0f;
+
+	return static_cast<float>(static_cast<double>(scalar) * (static_cast<double>(count) * divisor));
 }

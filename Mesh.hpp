@@ -16,13 +16,14 @@ public:
 	Mesh();
 	~Mesh();
 	Mesh(const Mesh&);
-	Mesh(Mesh&&) noexcept = default;
+	Mesh(Mesh&&) noexcept;
 	Mesh& operator=(const Mesh&);
-	Mesh& operator=(Mesh&&) noexcept = default;
+	Mesh& operator=(Mesh&&) noexcept;
 
 	bool AddVertex(const Vertex&);
 	bool Create();
 	bool Render(const Shader&, const bool = false) const;
+	bool RenderIndexed(const Shader&, const std::vector<size_t>&, const bool = false) const;
 	bool Destroy();
 };
 

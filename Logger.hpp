@@ -20,7 +20,7 @@ public:
 	static std::queue<std::string> Logs;
 
 	static bool SaveMessage(const std::string&, const bool = false);
-	static bool PrintMessages(const std::string& = std::string());
+	static bool PrintMessages(const std::string & = std::string());
 };
 
 #endif

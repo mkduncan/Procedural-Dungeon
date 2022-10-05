@@ -10,22 +10,16 @@
 
 #define MOVEMENT_SPEED 4.0f
 #define SPEED_MULTIPLIER 4.0f
-#define LOOK_SPEED 360.0f
+#define LOOK_SPEED 36.0f
 
 //	Generates a high quality pseudo-random number.
-static size_t NextRandomIndex(size_t minimum, size_t maximum)
-{
-	static std::mt19937_64 generator(std::chrono::high_resolution_clock::now().time_since_epoch().count());
-	std::uniform_int_distribution<size_t> distribution(minimum, maximum);
+static size_t NextRandomIndex(size_t, size_t);
 
-	return distribution(generator);
-}
-
-glm::mat4 Camera::Projection(glm::perspective(glm::radians(90.0f), 1.0f, 0.2f, 200.0f)), Camera::View(glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f))), Camera::Model = glm::mat4(1.0f);
-glm::vec3 Camera::Position(0.0f, 0.0f, 0.0f), Camera::Right(1.0f, 0.0f, 0.0f), Camera::Up(0.0f, 1.0f, 0.0f), Camera::Front(0.0f, 0.0f, -1.0f);
-double Camera::Mouse[2] = { -1.0, -1.0 };
+glm::mat4 Camera::Projection(glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 32.0f)), Camera::View(glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f))), Camera::Model = glm::mat4(1.0f);
+glm::vec3 Camera::Position(0.0f), Camera::Right(1.0f, 0.0f, 0.0f), Camera::Up(0.0f, 1.0f, 0.0f), Camera::Front(0.0f, 0.0f, -1.0f);
+double Camera::Mouse[2] = { -1.0 };
 float Camera::Pitch = 0.0f, Camera::Yaw = -90.0f;
-bool Camera::Click[2] = { false, false };
+bool Camera::Click[2] = { false };
 
 bool Camera::StartPosition()
 {
@@ -34,7 +28,7 @@ bool Camera::StartPosition()
 	size_t indexX = 0, indexY = 0;
 
 	if (Decoder::Cells.empty())
-		return Logger::SaveMessage(std::string("Error: Cammera::StartPosition() - 1"), false);
+		return Logger::SaveMessage(std::string("Error: Cammera::StartPosition() - 1"));
 
 	Camera::Yaw = 0.0f;
 
@@ -45,6 +39,7 @@ bool Camera::StartPosition()
 
 		if (Decoder::Cells[indexX][indexY] == OPENED_TILE)
 		{
+			//TODO: Initial y-axis camera orientation / rotation is incorrect due to inversion of row / column cell ordering.
 			if (Decoder::Cells[indexX - 1][indexY] == OPENED_TILE && Decoder::Cells[indexX - 2][indexY] == OPENED_TILE)
 			{
 				Camera::Yaw = -180.0f;
@@ -74,7 +69,7 @@ bool Camera::StartPosition()
 	if (Camera::Yaw < 0.0001f && Camera::Yaw > -0.0001f)
 	{
 		Camera::Yaw = -90.0f;
-		return Logger::SaveMessage(std::string("Error: Cammera::StartPosition() - 2"), false);
+		return Logger::SaveMessage(std::string("Error: Cammera::StartPosition() - 2"));
 	}
 
 	Camera::Position = glm::vec3((static_cast<float>(indexX) + 0.5f) * meshScale, 0.0f, (static_cast<float>(indexY) + 0.5f) * meshScale);
@@ -92,7 +87,7 @@ bool Camera::Update(const bool lockY, const bool lockSpeed)
 	float movementScalar = 1.0f;
 
 	if (Window::Interface == nullptr)
-		return Logger::SaveMessage(std::string("Error: Camera::Update() - 1"), false);
+		return Logger::SaveMessage(std::string("Error: Camera::Update() - 1"));
 
 	if (Camera::Mouse[0] < 0.0 && Camera::Mouse[1] < 0.0)
 	{
@@ -109,20 +104,38 @@ bool Camera::Update(const bool lockY, const bool lockSpeed)
 	if (!lockSpeed && (glfwGetKey(Window::Interface, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(Window::Interface, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS))
 		movementScalar = SPEED_MULTIPLIER;
 
-	if (glfwGetKey(Window::Interface, GLFW_KEY_A) == GLFW_PRESS || glfwGetKey(Window::Interface, GLFW_KEY_LEFT) == GLFW_PRESS)
-		Camera::Position -= Camera::Right * Window::DeltaTime(MOVEMENT_SPEED * movementScalar);
-
-	if (glfwGetKey(Window::Interface, GLFW_KEY_D) == GLFW_PRESS || glfwGetKey(Window::Interface, GLFW_KEY_RIGHT) == GLFW_PRESS)
-		Camera::Position += Camera::Right * Window::DeltaTime(MOVEMENT_SPEED * movementScalar);
-
-	if (glfwGetKey(Window::Interface, GLFW_KEY_W) == GLFW_PRESS || glfwGetKey(Window::Interface, GLFW_KEY_UP) == GLFW_PRESS)
-		Camera::Position += Camera::Front * Window::DeltaTime(MOVEMENT_SPEED * movementScalar);
-
-	if (glfwGetKey(Window::Interface, GLFW_KEY_S) == GLFW_PRESS || glfwGetKey(Window::Interface, GLFW_KEY_DOWN) == GLFW_PRESS)
-		Camera::Position -= Camera::Front * Window::DeltaTime(MOVEMENT_SPEED * movementScalar);
-
 	if (lockY)
-		Camera::Position.y = 0.0f;
+	{
+		if (glfwGetKey(Window::Interface, GLFW_KEY_A) == GLFW_PRESS || glfwGetKey(Window::Interface, GLFW_KEY_LEFT) == GLFW_PRESS)
+			Camera::Position -= glm::normalize(glm::vec3(Camera::Right.x, 0.0f, Camera::Right.z)) * Window::DeltaTime(MOVEMENT_SPEED * movementScalar);
+
+		if (glfwGetKey(Window::Interface, GLFW_KEY_D) == GLFW_PRESS || glfwGetKey(Window::Interface, GLFW_KEY_RIGHT) == GLFW_PRESS)
+			Camera::Position += glm::normalize(glm::vec3(Camera::Right.x, 0.0f, Camera::Right.z)) * Window::DeltaTime(MOVEMENT_SPEED * movementScalar);
+
+		if (glfwGetKey(Window::Interface, GLFW_KEY_W) == GLFW_PRESS || glfwGetKey(Window::Interface, GLFW_KEY_UP) == GLFW_PRESS)
+			Camera::Position += glm::normalize(glm::vec3(Camera::Front.x, 0.0f, Camera::Front.z)) * Window::DeltaTime(MOVEMENT_SPEED * movementScalar);
+
+		if (glfwGetKey(Window::Interface, GLFW_KEY_S) == GLFW_PRESS || glfwGetKey(Window::Interface, GLFW_KEY_DOWN) == GLFW_PRESS)
+			Camera::Position -= glm::normalize(glm::vec3(Camera::Front.x, 0.0f, Camera::Front.z)) * Window::DeltaTime(MOVEMENT_SPEED * movementScalar);
+
+		if (lockY)
+			Camera::Position.y = 0.0f;
+	}
+
+	else
+	{
+		if (glfwGetKey(Window::Interface, GLFW_KEY_A) == GLFW_PRESS || glfwGetKey(Window::Interface, GLFW_KEY_LEFT) == GLFW_PRESS)
+			Camera::Position -= Camera::Right * Window::DeltaTime(MOVEMENT_SPEED * movementScalar);
+
+		if (glfwGetKey(Window::Interface, GLFW_KEY_D) == GLFW_PRESS || glfwGetKey(Window::Interface, GLFW_KEY_RIGHT) == GLFW_PRESS)
+			Camera::Position += Camera::Right * Window::DeltaTime(MOVEMENT_SPEED * movementScalar);
+
+		if (glfwGetKey(Window::Interface, GLFW_KEY_W) == GLFW_PRESS || glfwGetKey(Window::Interface, GLFW_KEY_UP) == GLFW_PRESS)
+			Camera::Position += Camera::Front * Window::DeltaTime(MOVEMENT_SPEED * movementScalar);
+
+		if (glfwGetKey(Window::Interface, GLFW_KEY_S) == GLFW_PRESS || glfwGetKey(Window::Interface, GLFW_KEY_DOWN) == GLFW_PRESS)
+			Camera::Position -= Camera::Front * Window::DeltaTime(MOVEMENT_SPEED * movementScalar);
+	}
 
 	if (Camera::Click[0] && Camera::Click[1])
 	{
@@ -147,7 +160,15 @@ bool Camera::Update(const bool lockY, const bool lockSpeed)
 bool Camera::SetWorld(const Shader& shader)
 {
 	if (!shader.SetMatrix(std::string("projection"), Camera::Projection) || !shader.SetMatrix(std::string("view"), Camera::View) || !shader.SetMatrix(std::string("model"), Camera::Model))
-		return Logger::SaveMessage(std::string("Error: Camera::SetWorld() - 1"), false);
+		return Logger::SaveMessage(std::string("Error: Camera::SetWorld() - 1"));
 
 	return true;
+}
+
+static size_t NextRandomIndex(size_t minimum, size_t maximum)
+{
+	static std::mt19937_64 generator(std::chrono::high_resolution_clock::now().time_since_epoch().count());
+	std::uniform_int_distribution<size_t> distribution(minimum, maximum);
+
+	return distribution(generator);
 }

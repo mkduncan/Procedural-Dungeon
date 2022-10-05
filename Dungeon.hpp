@@ -1,8 +1,12 @@
 #ifndef Dungeon_H
 #define Dungeon_H
 
-#include "Mesh.hpp"
-#include "Shader.hpp"
+#include "AlignedBox.hpp"
+#include "Model.hpp"
+
+//
+#include "MeshObject.hpp"
+//
 
 class Dungeon
 {
@@ -15,13 +19,11 @@ private:
 	Dungeon& operator=(Dungeon&&) noexcept = delete;
 
 public:
-	static Mesh ShellMesh, WallMesh;
+	static float MeshScale, MeshHeight, TextureScale;
 
-	static bool GenerateMesh(const uint16_t, const uint16_t, const bool = true, const bool = true);
-	static bool RenderShellMesh(const Shader&);
-	static bool RenderWallMesh(const Shader&);
+	static bool GenerateModel(const uint16_t, const uint16_t, Model&, std::vector<AlignedBox>&);
+	static bool GenerateMesh(const uint16_t, const uint16_t, Mesh&);
 	static bool LockCamera();
-	static bool DestroyMesh();
 };
 
 #endif

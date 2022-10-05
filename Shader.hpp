@@ -15,11 +15,12 @@ public:
 	Shader();
 	~Shader();
 	Shader(const Shader&);
-	Shader(Shader&&) noexcept = default;
+	Shader(Shader&&) noexcept;
 	Shader& operator=(const Shader&);
-	Shader& operator=(Shader&&) noexcept = default;
+	Shader& operator=(Shader&&) noexcept;
 
 	bool Create(const std::string&, const std::string&);
+	bool Load(const std::string&, const std::string&);
 	bool Use() const;
 	bool Destroy();
 

@@ -5,6 +5,7 @@
 #include <string>
 
 std::queue<std::string> Logger::Logs = std::queue<std::string>();
+static bool InitializeLogger = Logger::SaveMessage(std::string());
 
 bool Logger::SaveMessage(const std::string& message, const bool returnCode)
 {
@@ -13,7 +14,8 @@ bool Logger::SaveMessage(const std::string& message, const bool returnCode)
 		if (Logs.empty())
 			Logs.push("Event logger has been initialized. This should be the first message.");
 
-		Logs.push(message);
+		if (!message.empty())
+			Logs.push(message);
 	}
 
 	return returnCode;
